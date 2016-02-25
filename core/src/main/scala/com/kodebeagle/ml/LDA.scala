@@ -17,7 +17,7 @@
 
 package com.kodebeagle.ml
 
-import org.apache.commons.math.special.Gamma
+import org.apache.commons.math3.special.Gamma
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.graphx.{Edge, EdgeTriplet, Graph, PartitionID, PartitionStrategy, TripletFields, VertexId, VertexRDD}
 import org.apache.spark.rdd.RDD
