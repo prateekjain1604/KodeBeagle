@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.kodebeagle.spark
+package com.kb.miner
 
 import java.net.InetAddress
 import java.util
@@ -46,7 +46,6 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.spark._
 import scala.collection.JavaConversions._
 import scala.collection.{Map}
-
 
 object CreateCollisionGraph extends Logger {
   val esPortKey = "es.port"
@@ -163,7 +162,7 @@ object CreateCollisionGraph extends Logger {
     /*Step 4: Obtaining list of Weighted Directed Graphs for each Api*/
     val apiGraphs: RDD[(String, List[NamedDirectedGraph])] = fileWithApiNames.flatMap { case (fileName, apiNames) =>
       val fileContent: String = getSourceFileContent(transportClient, fileName)
-      val graphUtils: GraphUtils = new GraphUtils()
+      val graphUtils: GraphUtils = new GraphUtils
       val apiWeightedGraphs: List[(String, List[NamedDirectedGraph])] = apiNames.map { api =>
         val graphsInfo: util.HashMap[String, NamedDirectedGraph] = new util.HashMap[String, NamedDirectedGraph]()
         val apiGraphList: util.List[NamedDirectedGraph] = graphUtils.getGraphsFromFile(fileContent, api, fileName)

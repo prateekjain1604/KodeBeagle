@@ -40,6 +40,8 @@ object KodeBeagleBuild extends Build {
   lazy val core = Project("core", file("core"), settings =
     coreSettings)
 
+  lazy val ml = Project("ml", file("ml"), settings = kodebeagleSettings) dependsOn core
+
   lazy val pluginImpl = Project("pluginImpl", file("plugins/idea/pluginImpl"), settings =
     pluginSettingsFull ++ findbugsSettings ++ scalaPluginSettings ++
       codequality.CodeQualityPlugin.Settings ++ excludeDependency).settings(
@@ -78,7 +80,7 @@ object KodeBeagleBuild extends Build {
     }
   }
 
-  
+
   def scalaPluginSettings =  Seq(
     scalaVersion := "2.11.6",
     libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value % "provided"
@@ -144,7 +146,7 @@ object Dependencies {
 
   val scalastyle = "org.scalastyle" %% "scalastyle" % "0.7.0"
   // Needed for scala parsing.
-  val spark = "org.apache.spark" %% "spark-core" % "1.4.1" exclude("org.apache.hadoop","hadoop-client")
+  val spark = "org.apache.spark" %% "spark-core" % "1.4.1" % "provided"//).exclude("org.apache.hadoop","hadoop-client")
   val scalaTest = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
   val slf4j = "org.slf4j" % "slf4j-log4j12" % "1.7.10"
   val javaparser = "com.github.javaparser" % "javaparser-core" % "2.0.0"
@@ -154,35 +156,37 @@ object Dependencies {
   val config = "com.typesafe" % "config" % "1.2.1"
   val jgit = "org.eclipse.jgit" % "org.eclipse.jgit" % "3.7.0.201502260915-r" intransitive()
   val commonsIO = "commons-io" % "commons-io" % "2.4"
-  val esSpark = "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0"
+  val esSpark = ("org.elasticsearch" %% "elasticsearch-spark" % "2.2.0").exclude("org.apache.spark", "spark-sql_2.10").exclude("org.apache.spark", "spark-core_2.10")
   val guava = "com.google.guava" % "guava" % "18.0"
   val akka = "com.typesafe.akka" % "akka-actor_2.10" % "2.3.0"
   val compress = "org.apache.commons" % "commons-compress" % "1.10"
-  val graphx = "org.apache.spark" % "spark-graphx_2.10" % "1.4.1"
+  val graphx = "org.apache.spark" % "spark-graphx_2.10" % "1.4.1" % "provided"
   val junit = "junit" % "junit" % "4.12"
   val rhino = "org.mozilla" % "rhino" % "1.7R4"
-  val apiminer =  "com.github.jatinagarwal" % "apiminer" % "v0.1.5"
-  val es = "org.elasticsearch" % "elasticsearch" % "2.2.0"
-  val hadoopCommon = "org.apache.hadoop" % "hadoop-common" % "2.5.2"
+  val jGraphTCore = "org.jgrapht" % "jgrapht-core" % "0.9.1"
+  val jGraphTExt = "org.jgrapht" % "jgrapht-ext" % "0.9.1"
+  //  val apiminer =  "com.github.jatinagarwal" % "apiminer" % "v0.1.5"
+  val es = "org.elasticsearch" % "elasticsearch" % "2.2.0" intransitive()
+  val hadoopCommon = "org.apache.hadoop" % "hadoop-common" % "2.5.2" intransitive()
 
   //Eclipse dependencies for Tassal libs
   object EclipseDeps {
-    val tycho = "org.eclipse.tycho" % "org.eclipse.jdt.core" % "3.10.0.v20140604-1726"
-    val contentType = "org.eclipse.birt.runtime" % "org.eclipse.core.contenttype" % "3.4.200.v20130326-1255"
-    val coreJobs = "org.eclipse.birt.runtime" % "org.eclipse.core.jobs" % "3.5.300.v20130429-1813"
-    val coreResources = "org.eclipse.birt.runtime" % "org.eclipse.core.resources" % "3.8.101.v20130717-0806"
-    val coreRT = "org.eclipse.birt.runtime" % "org.eclipse.core.runtime" % "3.9.0.v20130326-1255"
-    val eqCommon = "org.eclipse.birt.runtime" % "org.eclipse.equinox.common" % "3.6.200.v20130402-1505"
-    val eqPref = "org.eclipse.birt.runtime" % "org.eclipse.equinox.preferences" % "3.5.100.v20130422-1538"
-    val eqReg = "org.eclipse.birt.runtime" % "org.eclipse.equinox.registry" % "3.5.301.v20130717-1549"
-    val osgi = "org.eclipse.birt.runtime" % "org.eclipse.osgi" % "3.9.1.v20130814-1242"
-    val text = "org.eclipse.text" % "org.eclipse.text" % "3.5.101"
+    val tycho = "org.eclipse.tycho" % "org.eclipse.jdt.core" % "3.10.0.v20140604-1726" intransitive()
+    val contentType = "org.eclipse.birt.runtime" % "org.eclipse.core.contenttype" % "3.4.200.v20130326-1255" intransitive()
+    val coreJobs = "org.eclipse.birt.runtime" % "org.eclipse.core.jobs" % "3.5.300.v20130429-1813" intransitive()
+    val coreResources = "org.eclipse.birt.runtime" % "org.eclipse.core.resources" % "3.8.101.v20130717-0806" intransitive()
+    val coreRT = "org.eclipse.birt.runtime" % "org.eclipse.core.runtime" % "3.9.0.v20130326-1255" intransitive()
+    val eqCommon = "org.eclipse.birt.runtime" % "org.eclipse.equinox.common" % "3.6.200.v20130402-1505" intransitive()
+    val eqPref = "org.eclipse.birt.runtime" % "org.eclipse.equinox.preferences" % "3.5.100.v20130422-1538" intransitive()
+    val eqReg = "org.eclipse.birt.runtime" % "org.eclipse.equinox.registry" % "3.5.301.v20130717-1549" intransitive()
+    val osgi = "org.eclipse.birt.runtime" % "org.eclipse.osgi" % "3.9.1.v20130814-1242" intransitive()
+    val text = "org.eclipse.text" % "org.eclipse.text" % "3.5.101" intransitive()
 
     val allDeps = Seq(tycho, contentType, coreJobs, coreResources, coreRT, eqCommon, eqPref, eqReg, osgi, text)
   }
 
   val kodebeagle = Seq(es, akka, httpClient, scalastyle, spark, scalaTest, slf4j, javaparser, json4s, config,
-    json4sJackson, jgit, commonsIO, esSpark, guava, compress, junit, rhino, apiminer, graphx, hadoopCommon
+    json4sJackson, jgit, commonsIO, esSpark, guava, compress, junit, rhino, jGraphTCore, jGraphTExt, graphx, hadoopCommon
   ) ++ EclipseDeps.allDeps
 
 
