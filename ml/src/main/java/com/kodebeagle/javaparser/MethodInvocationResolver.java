@@ -17,14 +17,6 @@
 
 package com.kodebeagle.javaparser;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Stack;
-
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
@@ -34,6 +26,15 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Stack;
+
 public class MethodInvocationResolver extends TypeResolver {
 
 	private Map<String, List<MethodInvokRef>> methodInvoks = new HashMap<String, List<MethodInvokRef>>();
@@ -42,8 +43,15 @@ public class MethodInvocationResolver extends TypeResolver {
 	private List<TypeDecl> typeDeclarations = new ArrayList<>();
 	private MethodInvokRef currentMethodInvokRef;
 	private static final String OBJECT_TYPE = "java.lang.Object";
-	protected Map<String,String> types = new HashMap<>();
+	protected Map<String,String> types = new HashMap();
 	protected Queue<String> typesInFile = new ArrayDeque<>();
+	protected String superType;
+	private List<Object> interfacesFullyQualifiedName = new ArrayList<Object>();
+	protected List<String> interfaces = new ArrayList<String>();
+
+	public String getSuperType() {
+		return superType;
+	}
 
 	public List<TypeDecl> getTypeDeclarations() {
 		return typeDeclarations;
@@ -63,13 +71,28 @@ public class MethodInvocationResolver extends TypeResolver {
 
 	String type = "";
 
+	private String removeSpecialSymbols(final String pType) {
+		String type = pType;
+		if (type != null && type.contains("<")) {
+			type = type.substring(0, type.indexOf("<"));
+		} else if (type != null && type.contains("[")) {
+			type = type.substring(0, type.indexOf("["));
+		}
+		return type;
+	}
+
 	@Override
 	public boolean visit(org.eclipse.jdt.core.dom.TypeDeclaration td) {
 		if (typesInFile.isEmpty()) {
 			type = "";
 		}
+		if (td.getSuperclassType() != null) {
+			superType = getFullyQualifiedNameFor(removeSpecialSymbols(td.getSuperclassType().toString()));
+		}
+		interfacesFullyQualifiedName.addAll(Arrays.<Object>asList(td.superInterfaceTypes().toArray()));
 		typesInFile.add(td.getName().getFullyQualifiedName());
-		TypeDecl obj = new TypeDecl(td.getName().getFullyQualifiedName(), td.getName().getStartPosition());
+		String type = removeSpecialSymbols(td.getName().getFullyQualifiedName());
+		TypeDecl obj = new TypeDecl(type, td.getName().getStartPosition());
 		typeDeclarations.add(obj);
 		return true;
 	}
@@ -117,7 +140,8 @@ public class MethodInvocationResolver extends TypeResolver {
 				invoks = new ArrayList<MethodInvokRef>();
 				methodInvoks.put(currMethodName, invoks);
 			}
-			MethodInvokRef methodInvokRef = new MethodInvokRef("<init>", type, "", args
+			//MethodInvokRef methodInvokRef = new MethodInvokRef("<init>", type, "", args
+			MethodInvokRef methodInvokRef = new MethodInvokRef(node.getType().toString(), type, "", args
 					.size(), node.getStartPosition(), argTypes, node.getLength());
 			invoks.add(methodInvokRef);
 			currentMethodInvokRef = methodInvokRef;
@@ -128,12 +152,11 @@ public class MethodInvocationResolver extends TypeResolver {
 	@SuppressWarnings("rawtypes")
 	@Override
 	public boolean visit(MethodInvocation node) {
-		super.visit(node);
+		super.visit(node); // jatin changes
 		SimpleName methodName = node.getName();
 
 		List args = node.arguments();
 		Expression expression = node.getExpression();
-
 		Map<String, Integer> scopeBindings = getNodeScopes().get(node);
 		String target = getTarget(expression);
 		String targetType = translateTargetToType(expression, scopeBindings);
@@ -172,13 +195,12 @@ public class MethodInvocationResolver extends TypeResolver {
 			}
 			paramTypes.add(typeName);
 		}
-		if (node.isConstructor()) {
-			declaredMethods.add(new MethodDecl("<init>", num, nameNode
+		//if (node.isConstructor()) {
+		//	declaredMethods.add(new MethodDecl("<init>", num, nameNode
+		//			.getStartPosition(), paramTypes));
+		//} else {
+		declaredMethods.add(new MethodDecl(methodName, num, nameNode
 					.getStartPosition(), paramTypes));
-		} else {
-			declaredMethods.add(new MethodDecl(methodName, num, nameNode
-					.getStartPosition(), paramTypes));
-		}
 
 	}
 
@@ -193,7 +215,8 @@ public class MethodInvocationResolver extends TypeResolver {
 
 				String staticTypeRef = getImportedNames().get(target);
 				if (staticTypeRef != null) {
-					targetType = "<static>" + staticTypeRef;
+					// targetType = "<static>" + staticTypeRef;
+					targetType = staticTypeRef;
 				} else {
 					//System.out.println("Ignoring target " + target);
 				}
@@ -204,7 +227,7 @@ public class MethodInvocationResolver extends TypeResolver {
 		return targetType;
 	}
 
-	protected String getTarget(Expression expression) {
+	private String getTarget(Expression expression) {
 		String target = "";
 		if(expression != null){
 			target = expression.toString();
@@ -234,6 +257,13 @@ public class MethodInvocationResolver extends TypeResolver {
 			}
 		}
 		return argTypes;
+	}
+
+	public List<String> getInterfaces() {
+		for (int i = 0; i < interfacesFullyQualifiedName.size(); i++)
+			interfaces.add(getFullyQualifiedNameFor(
+					removeSpecialSymbols(interfacesFullyQualifiedName.get(i).toString())));
+		return interfaces;
 	}
 
 	public static class TypeDecl {
@@ -304,7 +334,7 @@ public class MethodInvocationResolver extends TypeResolver {
 		private Integer length;
 		private List<String> argTypes;
 
-		public MethodInvokRef(String methodName, String targetType, String target,
+		private MethodInvokRef(String methodName, String targetType, String target,
 				Integer argNum, Integer location, List<String> argTypes, Integer length) {
 			super();
 			this.methodName = methodName;

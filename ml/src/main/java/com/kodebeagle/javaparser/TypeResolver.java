@@ -17,10 +17,8 @@
 
 package com.kodebeagle.javaparser;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ArrayType;
@@ -41,8 +39,9 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WildcardType;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * This class does the following -
@@ -95,12 +94,29 @@ public class TypeResolver extends ASTVisitor {
 	private Map<ASTNode, String> nodeTypeBinding = Maps.newIdentityHashMap();
 
 	/**
+	 * For each importdeclaration node stores the type binding.
+	 */
+	private Map<ASTNode, String> importsDeclarationNode = Maps.newIdentityHashMap();
+
+	/**
 	 * Contains the types of the variables at each scope.
 	 */
 	private Map<Integer, String> variableTypes = Maps.newTreeMap();
 
 	final Map<String, Integer> bindingsCopy = Maps.newTreeMap();
 
+	/**
+	 * Map of binding Id and variable definition node.
+	 */
+	private Map<Integer, ASTNode> variableDeclarationBinding = Maps.newTreeMap();
+
+	public Map<Integer, ASTNode> getVariableDeclarationBinding() {
+		return variableDeclarationBinding;
+	}
+
+	public Map<ASTNode, String> getImportsDeclarationNode() {
+		return importsDeclarationNode;
+	}
 
 	public Map<String, String> getImportedNames() {
 		return importedNames;
@@ -132,17 +148,19 @@ public class TypeResolver extends ASTVisitor {
 	 * @param scopeBindings
 	 * @param name
 	 */
-	private void addBinding(final ASTNode node, final String name,
+	private void addBinding(final ASTNode node, final SimpleName name,
 			final Type type) {
 		final int bindingId = nextVarId;
 		nextVarId++;
-		nodeScopes.get(node).put(name, bindingId);
-		nodeScopes.get(node.getParent()).put(name, bindingId);
+		nodeScopes.get(node).put(name.getIdentifier(), bindingId);
+		nodeScopes.get(node.getParent()).put(name.getIdentifier(), bindingId);
 		variableBinding.put(bindingId, Lists.<ASTNode> newArrayList());
 		final String nameOfType = getNameOfType(type);
 		variableTypes.put(bindingId, nameOfType);
 		// Put the node reference in too (to know diff instances of same type)
 		variableRefBinding.put(bindingId, type);
+		// Put the node reference name in too (to know diff instances of same type)
+		variableDeclarationBinding.put(bindingId, name);
 	}
 
 	/**
@@ -173,6 +191,11 @@ public class TypeResolver extends ASTVisitor {
 			} catch (final ClassNotFoundException e) {
 				// Non a java lang class, thus it's in current package
 			}
+		}
+
+		if(className != null && className.charAt(0) >=97
+				&& className.charAt(0) <= 122 && className.contains(".")) {
+			return className;
 		}
 		return currentPackage + "." + className;
 	}
@@ -218,6 +241,7 @@ public class TypeResolver extends ASTVisitor {
 	private String getParametrizedType(final ParameterizedType type) {
 		final StringBuffer sb = new StringBuffer(getFullyQualifiedNameFor(type
 				.getType().toString()));
+
 		sb.append("<");
 		for (final Object typeArg : type.typeArguments()) {
 			final Type arg = (Type) typeArg;
@@ -255,7 +279,7 @@ public class TypeResolver extends ASTVisitor {
 	public boolean visit(final FieldDeclaration node) {
 		for (final Object fragment : node.fragments()) {
 			final VariableDeclarationFragment frag = (VariableDeclarationFragment) fragment;
-			addBinding(node, frag.getName().getIdentifier(), node.getType());
+			addBinding(node, frag.getName(), node.getType());
 		}
 		return true;
 	}
@@ -266,6 +290,7 @@ public class TypeResolver extends ASTVisitor {
 			final String qName = node.getName().getFullyQualifiedName();
 			importedNames.put(qName.substring(qName.lastIndexOf('.') + 1),
 					qName);
+			importsDeclarationNode.put(node.getName(), qName);
 		}
 		return false;
 	}
@@ -302,7 +327,7 @@ public class TypeResolver extends ASTVisitor {
 	 */
 	@Override
 	public boolean visit(final SingleVariableDeclaration node) {
-		addBinding(node, node.getName().getIdentifier(), node.getType());
+		addBinding(node, node.getName(), node.getType());
 		return true;
 	}
 
@@ -313,7 +338,7 @@ public class TypeResolver extends ASTVisitor {
 	public boolean visit(final VariableDeclarationExpression node) {
 		for (final Object fragment : node.fragments()) {
 			final VariableDeclarationFragment frag = (VariableDeclarationFragment) fragment;
-			addBinding(node, frag.getName().getIdentifier(), node.getType());
+			addBinding(node, frag.getName(), node.getType());
 		}
 		return true;
 	}
@@ -330,7 +355,7 @@ public class TypeResolver extends ASTVisitor {
 	public boolean visit(final VariableDeclarationStatement node) {
 		for (final Object fragment : node.fragments()) {
 			final VariableDeclarationFragment frag = (VariableDeclarationFragment) fragment;
-			addBinding(node, frag.getName().getIdentifier(), node.getType());
+			addBinding(node, frag.getName(), node.getType());
 		}
 		return true;
 	}

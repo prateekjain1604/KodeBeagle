@@ -40,7 +40,7 @@ object KodeBeagleBuild extends Build {
   lazy val core = Project("core", file("core"), settings =
     coreSettings)
 
-  lazy val ml = Project("ml", file("ml"), settings = kodebeagleSettings) dependsOn core
+  lazy val ml = Project("ml", file("ml"), settings = kodebeagleSettings ++ coreSettings) dependsOn(core)
 
   lazy val pluginImpl = Project("pluginImpl", file("plugins/idea/pluginImpl"), settings =
     pluginSettingsFull ++ findbugsSettings ++ scalaPluginSettings ++
@@ -76,7 +76,7 @@ object KodeBeagleBuild extends Build {
         """[warn] Plugin project disabled. To enable append -Didea.lib="idea/lib"""" ++
           """ to JVM params in SBT settings or""" ++
           """ while invoking sbt (incase it is called from commandline.). """)
-      Seq(core)
+      Seq(core,ml)
     }
   }
 

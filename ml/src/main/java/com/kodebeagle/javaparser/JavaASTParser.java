@@ -17,10 +17,6 @@
 
 package com.kodebeagle.javaparser;
 
-import java.io.IOException;
-import java.util.Hashtable;
-import java.util.Map;
-
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -28,11 +24,15 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 
-public class JavaASTParser {
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Hashtable;
+import java.util.Map;
+
+public class JavaASTParser implements Serializable{
 
 	private final boolean useBindings;
 	private final boolean useJavadocs;
-
 	public enum ParseType {
 		COMPILATION_UNIT, CLASS_BODY, METHOD, STATEMENTS, EXPRESSION
 	}

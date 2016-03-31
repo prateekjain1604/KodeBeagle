@@ -22,6 +22,7 @@ import com.kodebeagle.javaparser.MethodInvocationResolver.MethodDecl;
 import com.kodebeagle.javaparser.MethodInvocationResolver.MethodInvokRef;
 import org.eclipse.jdt.core.dom.ASTNode;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -88,7 +89,7 @@ public class SingleClassBindingResolver {
         for (final Entry<Integer, List<ASTNode>> variableBinding : resolver.getVariableBinding()
                 .entrySet()) {
             Integer bindingId = variableBinding.getKey();
-            final ASTNode parent = resolver.getVariableRefBinding().get(bindingId);
+            final ASTNode parent = resolver.getVariableDeclarationBinding().get(bindingId);
             for (final ASTNode node : variableBinding.getValue()) {
                 variableTypes.put(node, parent);
             }
@@ -107,7 +108,9 @@ public class SingleClassBindingResolver {
 
         for (final Entry<ASTNode, String> typeBinding : resolver.getNodeTypeBinding()
                 .entrySet()) {
-            nodeTypes.put(typeBinding.getKey(), typeBinding.getValue());
+            if (!typeBinding.getValue().contains("<")) {
+                nodeTypes.put(typeBinding.getKey(), typeBinding.getValue());
+            }
         }
         return nodeTypes;
     }
@@ -126,6 +129,22 @@ public class SingleClassBindingResolver {
 
     public List<MethodInvocationResolver.TypeDecl> getTypeDeclarations() {
         return resolver.getTypeDeclarations();
+    }
+
+    public Collection<String> getImports() {
+        return resolver.getImportedNames().values();
+    }
+
+    public Map<ASTNode, String> getImportsDeclarationNode() {
+        return resolver.getImportsDeclarationNode();
+    }
+
+    public String getSuperType() {
+        return resolver.getSuperType();
+    }
+
+    public List<String> getInterfaces() {
+        return resolver.getInterfaces();
     }
 
     public void resolve() {
